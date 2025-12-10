@@ -1,0 +1,223 @@
+-- Create Queries
+
+
+
+-- drop database TourismGroup8;
+
+CREATE DATABASE TourismGroup8;
+GO
+
+USE TourismGroup8;
+GO
+
+
+DROP TABLE IF EXISTS Booking_Item, Booking, Guide_Contract, Accommodation_Contract, Asset_Contract, Review, Booking_Schedule, Payment, Customer_Support, Itinerary, Activity, Accommodation, Schedule, Asset, Tour_Guide, Tourist_Destination, Travel_Agency, [User];
+
+
+CREATE TABLE [User] (
+    User_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Phone_Number BIGINT CHECK (LEN(CAST(Phone_Number AS VARCHAR)) = 10),
+    Email_ID VARCHAR(100) NOT NULL UNIQUE,
+    Password VARCHAR(100) NOT NULL,
+    Street VARCHAR(100),
+    City VARCHAR(50),
+    State VARCHAR(50),
+    Pincode INT CHECK (Pincode BETWEEN 100000 AND 999999)
+);
+
+
+CREATE TABLE Travel_Agency (
+    Agency_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    City VARCHAR(50),
+    Location VARCHAR(100),
+    Contact_Info BIGINT CHECK (Contact_Info > 999999999 AND Contact_Info <= 9999999999),
+    Rating INT CHECK (Rating BETWEEN 1 AND 5)
+);
+
+
+CREATE TABLE Tourist_Destination (
+    Destination_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Agency_ID INT NOT NULL,
+    Name VARCHAR(100) NOT NULL,
+    Location VARCHAR(100),
+    Popular_Attractions VARCHAR(500),
+    Rating INT CHECK (Rating BETWEEN 1 AND 5),
+    Description VARCHAR(500),
+    FOREIGN KEY (Agency_ID) REFERENCES Travel_Agency(Agency_ID)
+);
+
+
+CREATE TABLE Itinerary (
+    Itinerary_ID INT IDENTITY(1,1) PRIMARY KEY,
+    User_ID INT NOT NULL,
+    Start_Date DATETIME NOT NULL,
+    End_Date DATETIME NOT NULL,
+    Destination VARCHAR(100),
+    City VARCHAR(50),
+    Total_Cost FLOAT CHECK (Total_Cost >= 0),
+    FOREIGN KEY (User_ID) REFERENCES [User](User_ID),
+    CHECK (End_Date >= Start_Date)
+);
+
+
+CREATE TABLE Customer_Support (
+    Support_ID INT IDENTITY(1,1) PRIMARY KEY,
+    User_ID INT NOT NULL,
+    Issue_Description VARCHAR(500) NOT NULL,
+    Resolution_Status VARCHAR(50) CHECK (Resolution_Status IN ('Resolved', 'Pending', 'Closed')),
+    Resolution_Date DATETIME,
+    FOREIGN KEY (User_ID) REFERENCES [User](User_ID)
+);
+
+
+CREATE TABLE Activity (
+    Activity_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Destination_ID INT NOT NULL,
+    Name VARCHAR(100) NOT NULL,
+    Description VARCHAR(500),
+    Location VARCHAR(100),
+    Duration INT CHECK (Duration > 0),
+    Price INT CHECK (Price >= 0),
+    FOREIGN KEY (Destination_ID) REFERENCES Tourist_Destination(Destination_ID)
+);
+
+
+CREATE TABLE Accommodation (
+    Accommodation_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Destination_ID INT NOT NULL,
+    Name VARCHAR(100) NOT NULL,
+    Street VARCHAR(100),
+    City VARCHAR(50),
+    State VARCHAR(50),
+    Zip_Code INT,
+    Type VARCHAR(50),
+    Price_Per_Night FLOAT CHECK (Price_Per_Night >= 0),
+    Availability_Status VARCHAR(50) CHECK (Availability_Status IN ('Available', 'Booked')),
+    Rating INT CHECK (Rating BETWEEN 1 AND 5),
+    FOREIGN KEY (Destination_ID) REFERENCES Tourist_Destination(Destination_ID)
+);
+
+
+CREATE TABLE Asset (
+    Asset_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Type VARCHAR(50) NOT NULL,
+    Company_Name VARCHAR(100),
+    Description VARCHAR(500),
+    Value FLOAT CHECK (Value >= 0)
+);
+
+
+CREATE TABLE Schedule (
+    Schedule_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Asset_ID INT NOT NULL,
+    Departure_Time DATETIME NOT NULL,
+    Arrival_Time DATETIME NOT NULL,
+    Price FLOAT CHECK (Price >= 0),
+    FOREIGN KEY (Asset_ID) REFERENCES Asset(Asset_ID),
+    CHECK (Arrival_Time >= Departure_Time)
+);
+
+
+CREATE TABLE Tour_Guide (
+    Guide_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Language VARCHAR(50),
+    Experience_Years INT CHECK (Experience_Years >= 0),
+    Contact_Info BIGINT CHECK (LEN(CAST(Contact_Info AS VARCHAR)) = 10),
+    Rating INT CHECK (Rating BETWEEN 1 AND 5)
+);
+
+
+CREATE TABLE Review (
+    Review_ID INT IDENTITY(1,1) PRIMARY KEY,
+    User_ID INT NOT NULL,
+    Destination_ID INT NOT NULL,
+    Accommodation_ID INT,
+    Activity_ID INT,
+    Rating INT CHECK (Rating BETWEEN 1 AND 5),
+    Review_Text VARCHAR(500),
+    Review_Date DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (User_ID) REFERENCES [User](User_ID),
+    FOREIGN KEY (Destination_ID) REFERENCES Tourist_Destination(Destination_ID),
+    FOREIGN KEY (Accommodation_ID) REFERENCES Accommodation(Accommodation_ID),
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
+);
+
+
+CREATE TABLE Booking (
+    Booking_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Itinerary_ID INT NOT NULL UNIQUE,
+    User_ID INT NOT NULL,
+    Booking_Date DATETIME DEFAULT GETDATE(),
+    Total_Cost FLOAT CHECK (Total_Cost >= 0),
+    Payment_Status VARCHAR(50) CHECK (Payment_Status IN ('Paid', 'Pending', 'Canceled')),
+    Accommodation_ID INT NULL,   -- New field added
+    Activity_ID INT NULL,        -- New field added
+    Schedule_ID INT NULL,        -- New field added
+    FOREIGN KEY (User_ID) REFERENCES [User](User_ID),
+    FOREIGN KEY (Itinerary_ID) REFERENCES Itinerary(Itinerary_ID),
+    FOREIGN KEY (Accommodation_ID) REFERENCES Accommodation(Accommodation_ID),
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID),
+    FOREIGN KEY (Schedule_ID) REFERENCES Schedule(Schedule_ID)
+);
+
+
+CREATE TABLE Payment (
+    Payment_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Booking_ID INT NOT NULL,
+    Payment_Method VARCHAR(50) CHECK (Payment_Method IN ('Credit Card', 'Debit Card', 'UPI', 'Cash')),
+    Payment_Amount FLOAT CHECK (Payment_Amount > 0),
+    Payment_Status VARCHAR(50) CHECK (Payment_Status IN ('Paid', 'Pending', 'Failed')),
+    Transaction_Date DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (Booking_ID) REFERENCES Booking(Booking_ID)
+);
+
+
+CREATE TABLE Booking_Schedule (
+    Schedule_ID INT NOT NULL,
+    Booking_ID INT NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NOT NULL,
+    PRIMARY KEY (Schedule_ID, Booking_ID),
+    FOREIGN KEY (Schedule_ID) REFERENCES Schedule(Schedule_ID),
+    FOREIGN KEY (Booking_ID) REFERENCES Booking(Booking_ID),
+    CHECK (EndDate >= StartDate)
+);
+
+
+CREATE TABLE Guide_Contract (
+    Activity_ID INT NOT NULL,
+    Guide_ID INT NOT NULL,
+    ContractStartDate DATETIME NOT NULL,
+    ContractEndDate DATETIME NOT NULL,
+    PRIMARY KEY (Activity_ID, Guide_ID),
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID),
+    FOREIGN KEY (Guide_ID) REFERENCES Tour_Guide(Guide_ID),
+    CHECK (ContractEndDate >= ContractStartDate)
+);
+
+
+CREATE TABLE Accommodation_Contract (
+    Agency_ID INT NOT NULL,
+    Accommodation_ID INT NOT NULL,
+    ContractStartDate DATETIME NOT NULL,
+    ContractEndDate DATETIME NOT NULL,
+    PRIMARY KEY (Agency_ID, Accommodation_ID),
+    FOREIGN KEY (Agency_ID) REFERENCES Travel_Agency(Agency_ID),
+    FOREIGN KEY (Accommodation_ID) REFERENCES Accommodation(Accommodation_ID),
+    CHECK (ContractEndDate >= ContractStartDate)
+);
+
+
+CREATE TABLE Asset_Contract (
+    Agency_ID INT NOT NULL,
+    Asset_ID INT NOT NULL,
+    ContractStartDate DATETIME NOT NULL,
+    ContractEndDate DATETIME NOT NULL,
+    PRIMARY KEY (Agency_ID, Asset_ID),
+    FOREIGN KEY (Agency_ID) REFERENCES Travel_Agency(Agency_ID),
+    FOREIGN KEY (Asset_ID) REFERENCES Asset(Asset_ID),
+    CHECK (ContractEndDate >= ContractStartDate)
+);

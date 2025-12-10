@@ -1,0 +1,20 @@
+--Index
+
+USE TourismGroup8;
+
+-- Index on Payment(Booking_ID, Payment_Status)
+-- Queries that fetch unpaid or failed payments for a particular booking.
+
+CREATE NONCLUSTERED INDEX idx_Payment_Status ON Payment(Booking_ID, Payment_Status);
+
+
+-- Index on Booking(User_ID, Booking_Date)
+-- Generating user-specific booking history or reports.
+
+CREATE NONCLUSTERED INDEX idx_Booking_User_Date ON Booking(User_ID, Booking_Date);
+
+
+-- Index on Tourist_Destination(Name)
+-- Queries that fetch details of a tourist destination by name.
+
+CREATE NONCLUSTERED INDEX idx_Destination_Name ON Tourist_Destination(Name);
